@@ -1,0 +1,23 @@
+﻿id: compare-valid-only
+title: Add valid-only comparison mode
+agent: github-copilot-custom-agent
+
+task_prompt: >
+  Add a --valid-only option to agent-profiler compare so comparison can exclude
+  INVALID_RUN entries while preserving the default behavior.
+
+expected:
+  forbidden_paths:
+    - .env
+    - "**/*.secret"
+    - ".agent-profiler/runs/**"
+    - ".agent-profiler/snapshots/**"
+    - ".agent-profiler/reports/comparison-*.md"
+
+validation:
+  required_reports:
+    - .agent-profiler/reports/implementation-report.md
+  required_commands:
+    - python -m pytest
+    - python -m ruff check .
+    - python -m ruff format --check .
