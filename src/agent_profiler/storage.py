@@ -63,6 +63,12 @@ def latest_run_path(root: Path) -> Path | None:
     return runs[-1] if runs else None
 
 
+def recent_run_paths(root: Path, count: int) -> list[Path]:
+    runs_dir = root / PROFILER_DIR / "runs"
+    runs = sorted(runs_dir.glob("*.json"), key=lambda path: path.stat().st_mtime, reverse=True)
+    return runs[:count]
+
+
 def set_active_run(root: Path, run_id: str) -> None:
     (root / PROFILER_DIR / "active-run").write_text(run_id, encoding="utf-8")
 

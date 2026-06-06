@@ -15,6 +15,7 @@ from agent_profiler.git_inspector import (
     snapshot,
 )
 from agent_profiler.models import RunMetadata
+from agent_profiler.reports.comparison import write_comparison_report
 from agent_profiler.reports.markdown import write_markdown_report
 from agent_profiler.rules import analyze_run
 from agent_profiler.scoring import score_run
@@ -60,6 +61,10 @@ def build_parser() -> argparse.ArgumentParser:
     report_parser = subcommands.add_parser("report")
     report_parser.add_argument("--run", default="latest", dest="run_id")
     report_parser.set_defaults(func=cmd_report)
+
+    compare_parser = subcommands.add_parser("compare")
+    compare_parser.add_argument("--last", type=int, default=10, dest="last")
+    compare_parser.set_defaults(func=cmd_compare)
     return parser
 
 
@@ -153,6 +158,16 @@ def cmd_report(args: argparse.Namespace) -> int:
     run = load_run(root, args.run_id)
     path = write_markdown_report(root, run)
     print(f"Wrote report: {path.relative_to(root).as_posix()}")
+    return 0
+
+
+def cmd_compare(args: argparse.Namespace) -> int:
+    if args.last < 1:
+        raise ValueError("--last must be at least 1")
+    root = Path.cwd()
+    ensure_layout(root)
+    path = write_comparison_report(root, args.last)
+    print(f"Wrote comparison report: {path.relative_to(root).as_posix()}")
     return 0
 
 

@@ -10,6 +10,8 @@
 - Added deterministic MVP findings for missing required reports, forbidden file changes, repeated command failures, and large command output.
 - Added Phase 9 deterministic local findings for formatting-heavy diff, mechanical repeated edit, broad file spread, full test suite overuse, unexpected lock-file changes, missing tests, generated-file manual edits, and low reviewability.
 - Added a deterministic cleanup finding for suspicious near-duplicate filenames, including `EADME.md` when `README.md` exists in the same directory.
+- Added Phase 10 local comparison with `agent-profiler compare --last <number>`.
+- Added deterministic Markdown comparison reports covering run count, average score, verdict counts, common findings, repeated bottlenecks, agents/cases, and recommendations.
 - Added simple transparent scoring and Markdown report generation with the exact MVP report headings.
 - Improved Markdown report findings so they are grouped by scope, validation, efficiency, automation opportunities, and safety.
 - Added focused unit tests for init layout, sample-case loading, command capture, MVP rules, Phase 9 rules, and report headings/grouping.
@@ -31,10 +33,12 @@
 - `src/agent_profiler/scoring.py`
 - `src/agent_profiler/storage.py`
 - `src/agent_profiler/reports/__init__.py`
+- `src/agent_profiler/reports/comparison.py`
 - `src/agent_profiler/reports/markdown.py`
 - `src/agent_profiler/rules/__init__.py`
 - `src/agent_profiler/rules/core.py`
 - `tests/unit/test_cli_workflow.py`
+- `tests/unit/test_compare.py`
 - `tests/unit/test_phase9_rules.py`
 - `tests/unit/test_report.py`
 - `tests/unit/test_rules.py`
@@ -49,12 +53,14 @@
 - `python -m ruff check .`
 - `python -m ruff format --check .`
 - `python -m ruff format src\agent_profiler\rules\core.py src\agent_profiler\reports\markdown.py src\agent_profiler\scoring.py tests\unit\test_phase9_rules.py tests\unit\test_report.py`
+- `python -m ruff format src\agent_profiler\cli.py src\agent_profiler\storage.py src\agent_profiler\reports\comparison.py tests\unit\test_compare.py`
 - `pip install -e .`
 - `agent-profiler init`
 - `agent-profiler start --case sample-case`
 - `agent-profiler run python -c "print('hello')"`
 - `agent-profiler finish`
 - `agent-profiler report --run latest`
+- `agent-profiler compare --last 2`
 - Created user-level `agent-profiler.cmd` shim in `C:\Users\Computer\AppData\Roaming\npm` so `agent-profiler` resolves by command name in PowerShell.
 - `git status --short --untracked-files=all`
 - `git ls-files`
@@ -62,9 +68,10 @@
 
 ## Validation result
 
-- `python -m pytest`: passed, 16 tests.
+- `python -m pytest`: passed, 18 tests.
 - `python -m ruff check .`: passed.
 - `python -m ruff format --check .`: passed.
+- `agent-profiler compare --last 2`: passed and generated an ignored local comparison report.
 - MVP smoke workflow with `sample-case`: passed.
 - Generated Markdown report includes the required MVP headings:
   `# Agent Run Report`, `## Summary`, `## Run Metadata`, `## Task and Agent`, `## Changed Files`, `## Commands Run`, `## Findings`, `## Recommendations`, and `## Final Verdict`.
@@ -72,13 +79,14 @@
 ## Known limitations
 
 - The MVP uses rule-based local analysis only; it does not perform semantic task correctness analysis.
-- HTML reports, static inspect mode, suites, comparisons, GitHub integration, provider usage import, and LLM analysis are intentionally not implemented.
+- HTML reports, static inspect mode, suites, GitHub integration, provider usage import, and LLM analysis are intentionally not implemented.
 - Command wrapping uses the local shell to preserve normal CLI behavior, so commands should be treated as user-supplied local actions.
 - Changed-file line counts come from git diff against `HEAD`; untracked files are detected but have zero line counts until tracked.
 - Phase 9 rules are deterministic heuristics. They provide review signals from local evidence, not proof of semantic correctness or intent.
 - Suspicious filename detection is intentionally simple and compares changed files against common repository filenames in the same directory.
+- Phase 10 comparison uses only local run JSON files and simple counters. It does not compare semantic task correctness.
 - Intentionally ignored local/generated files: `.agent-profiler/runs/`, `.agent-profiler/command-logs/`, `.agent-profiler/snapshots/`, generated `.agent-profiler/reports/*.md` except `implementation-report.md`, `.agent-profiler/cases.zip`, Python bytecode caches, pytest/Ruff caches, and editable-install egg-info metadata.
 
 ## Next recommended step
 
-Phase 10 comparison, but only after several real local runs exist so comparison output has meaningful run history.
+Future GitHub integration planning, but planning only. Do not implement GitHub integration until the local comparison workflow has been exercised with several real local runs.
