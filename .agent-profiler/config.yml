@@ -1,0 +1,22 @@
+project:
+  name: local-project
+rules:
+  repeated_failure:
+    enabled: true
+    max_same_failure_count: 2
+  large_command_output:
+    enabled: true
+    max_lines: 1000
+  forbidden_paths:
+  - .env
+  - '**/*.secret'
+  - '**/secrets/**'
+  - poetry.lock
+  - package-lock.json
+scoring:
+  correctness: 40
+  instruction_compliance: 20
+  scope_control: 15
+  validation_quality: 10
+  efficiency: 10
+  report_quality: 5

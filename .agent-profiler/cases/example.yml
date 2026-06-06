@@ -1,0 +1,11 @@
+id: example
+title: Example local agent task
+agent: local-agent
+task_prompt: Describe the task the coding agent should perform.
+expected:
+  forbidden_paths:
+  - .env
+  - '**/*.secret'
+validation:
+  required_reports:
+  - .agent-profiler/reports/implementation-report.md

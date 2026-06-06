@@ -1,0 +1,41 @@
+from __future__ import annotations
+
+from agent_profiler.models import RunMetadata
+
+
+def score_run(run: RunMetadata) -> tuple[dict[str, int], str]:
+    score = {
+        "correctness": 40,
+        "instruction_compliance": 20,
+        "scope_control": 15,
+        "validation_quality": 10,
+        "efficiency": 10,
+        "report_quality": 5,
+    }
+    for finding in run.findings:
+        if finding.id == "missing_report":
+            score["instruction_compliance"] = max(0, score["instruction_compliance"] - 10)
+            score["report_quality"] = 0
+        elif finding.id == "forbidden_file_changed":
+            score["scope_control"] = max(0, score["scope_control"] - 15)
+            score["instruction_compliance"] = max(0, score["instruction_compliance"] - 5)
+        elif finding.id == "repeated_failure":
+            score["efficiency"] = max(0, score["efficiency"] - 6)
+            score["validation_quality"] = max(0, score["validation_quality"] - 2)
+        elif finding.id == "large_command_output":
+            score["efficiency"] = max(0, score["efficiency"] - 2)
+    if not run.commands:
+        score["validation_quality"] = 0
+    if any(command.exit_code != 0 for command in run.commands):
+        score["correctness"] = max(0, score["correctness"] - 10)
+
+    total = sum(score.values())
+    if any(finding.severity == "high" for finding in run.findings):
+        verdict = "NEEDS_HUMAN_REVIEW"
+    elif run.findings:
+        verdict = "PASS_WITH_WARNINGS"
+    elif total >= 80:
+        verdict = "PASS"
+    else:
+        verdict = "PASS_WITH_WARNINGS"
+    return score, verdict

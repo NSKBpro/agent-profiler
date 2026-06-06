@@ -1,0 +1,2 @@
+[console_scripts]
+agent-profiler = agent_profiler.cli:main
