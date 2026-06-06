@@ -42,7 +42,11 @@ def test_broad_file_spread_rule_works(tmp_path: Path) -> None:
         ]
     )
 
-    assert _finding_ids(tmp_path, run) == {"broad_file_spread", "missing_tests"}
+    assert _finding_ids(tmp_path, run) == {
+        "broad_file_spread",
+        "missing_tests",
+        "source_changed_without_pytest",
+    }
 
 
 def test_suspicious_near_duplicate_filename_rule_detects_readme_typo(tmp_path: Path) -> None:
@@ -76,7 +80,7 @@ def test_lock_file_changed_unexpectedly_rule_works(tmp_path: Path) -> None:
 def test_missing_tests_rule_works(tmp_path: Path) -> None:
     run = _run(changed_files=[ChangedFile("src/service.py", "modified")])
 
-    assert _finding_ids(tmp_path, run) == {"missing_tests"}
+    assert _finding_ids(tmp_path, run) == {"missing_tests", "source_changed_without_pytest"}
 
 
 def test_generated_file_changed_manually_rule_works(tmp_path: Path) -> None:
@@ -90,7 +94,10 @@ def test_generated_file_changed_manually_rule_works(tmp_path: Path) -> None:
         ]
     )
 
-    assert _finding_ids(tmp_path, run) == {"generated_file_changed_manually"}
+    assert _finding_ids(tmp_path, run) == {
+        "generated_file_changed_manually",
+        "source_changed_without_pytest",
+    }
 
 
 def test_low_reviewability_rule_works(tmp_path: Path) -> None:
@@ -103,6 +110,7 @@ def test_low_reviewability_rule_works(tmp_path: Path) -> None:
     assert _finding_ids(tmp_path, run) == {
         "low_reviewability",
         "missing_tests",
+        "source_changed_without_pytest",
     }
 
 

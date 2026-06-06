@@ -248,7 +248,7 @@ A generated report includes:
 ## Final Verdict
 ```
 
-Reports also include scoring and grouped findings.
+Reports also include scoring, grouped findings, and optional usage/cost details when a local usage file is attached.
 
 The score is intentionally simple and explainable.
 

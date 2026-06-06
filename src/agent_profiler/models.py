@@ -95,6 +95,36 @@ class ChangedFile:
 
 
 @dataclass(slots=True)
+class UsageMetadata:
+    provider: str
+    model: str
+    agent: str | None = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    cached_tokens: int | None = None
+    premium_requests: int | None = None
+    estimated_cost: float | None = None
+    duration_seconds: float | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> UsageMetadata:
+        return cls(
+            provider=str(data["provider"]),
+            model=str(data["model"]),
+            agent=str(data["agent"]) if data.get("agent") is not None else None,
+            input_tokens=_optional_int(data.get("input_tokens")),
+            output_tokens=_optional_int(data.get("output_tokens")),
+            cached_tokens=_optional_int(data.get("cached_tokens")),
+            premium_requests=_optional_int(data.get("premium_requests")),
+            estimated_cost=_optional_float(data.get("estimated_cost")),
+            duration_seconds=_optional_float(data.get("duration_seconds")),
+        )
+
+
+@dataclass(slots=True)
 class RunMetadata:
     run_id: str
     case_id: str | None
@@ -113,6 +143,8 @@ class RunMetadata:
     commands: list[CommandRecord] = field(default_factory=list)
     changed_files: list[ChangedFile] = field(default_factory=list)
     diff: str = ""
+    usage: UsageMetadata | None = None
+    usage_path: str | None = None
     reports: list[str] = field(default_factory=list)
     findings: list[Finding] = field(default_factory=list)
     score: dict[str, int] = field(default_factory=dict)
@@ -127,6 +159,7 @@ class RunMetadata:
         data["commands"] = [command.to_dict() for command in self.commands]
         data["changed_files"] = [changed_file.to_dict() for changed_file in self.changed_files]
         data["findings"] = [finding.to_dict() for finding in self.findings]
+        data["usage"] = self.usage.to_dict() if self.usage else None
         return data
 
     @classmethod
@@ -149,11 +182,21 @@ class RunMetadata:
             commands=[CommandRecord.from_dict(item) for item in data.get("commands", [])],
             changed_files=[ChangedFile.from_dict(item) for item in data.get("changed_files", [])],
             diff=str(data.get("diff", "")),
+            usage=UsageMetadata.from_dict(data["usage"]) if data.get("usage") else None,
+            usage_path=data.get("usage_path"),
             reports=[str(item) for item in data.get("reports", [])],
             findings=[Finding.from_dict(item) for item in data.get("findings", [])],
             score={str(key): int(value) for key, value in data.get("score", {}).items()},
             verdict=str(data.get("verdict", "INVALID_RUN")),
         )
+
+
+def _optional_int(value: Any) -> int | None:
+    return int(value) if value is not None else None
+
+
+def _optional_float(value: Any) -> float | None:
+    return float(value) if value is not None else None
 
 
 def as_repo_relative(repo_path: Path, path: Path) -> str:

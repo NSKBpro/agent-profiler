@@ -10,6 +10,11 @@ from agent_profiler.models import ChangedFile, Finding, RunMetadata
 def analyze_run(root: Path, run: RunMetadata, config: dict[str, Any]) -> list[Finding]:
     findings: list[Finding] = []
     findings.extend(_missing_required_reports(root, run))
+    findings.extend(_changed_files_outside_allowed_paths(run))
+    findings.extend(_missing_required_validation_commands(run))
+    findings.extend(_source_changed_without_pytest(run))
+    findings.extend(_docs_only_overvalidation(run))
+    findings.extend(_usage_cost_findings(run))
     findings.extend(_forbidden_file_changes(run))
     findings.extend(_repeated_command_failures(run, config))
     findings.extend(_large_command_outputs(run, config))
@@ -42,6 +47,183 @@ def _missing_required_reports(root: Path, run: RunMetadata) -> list[Finding]:
             ),
         )
     ]
+
+
+def _changed_files_outside_allowed_paths(run: RunMetadata) -> list[Finding]:
+    allowed = _configured_list(run.case.get("expected", {}), "allowed_paths")
+    if not allowed:
+        return []
+    outside = [
+        changed_file.path
+        for changed_file in run.changed_files
+        if not _matches_any_pattern(changed_file.path, allowed)
+    ]
+    if not outside:
+        return []
+    return [
+        Finding(
+            id="changed_file_outside_allowed_paths",
+            severity="high",
+            confidence="high",
+            title="Changed file outside allowed paths",
+            evidence=[f"Outside allowed paths: {path}" for path in outside],
+            recommendation=(
+                "Tighten allowed paths in the task prompt or require explicit justification for "
+                "out-of-scope file changes."
+            ),
+        )
+    ]
+
+
+def _missing_required_validation_commands(run: RunMetadata) -> list[Finding]:
+    required = _configured_list(run.case.get("validation", {}), "required_commands")
+    if not required:
+        return []
+    captured = {_normalize_command(command.command) for command in run.commands}
+    missing = [command for command in required if _normalize_command(command) not in captured]
+    if not missing:
+        return []
+    return [
+        Finding(
+            id="missing_required_validation_command",
+            severity="high",
+            confidence="high",
+            title="Required validation command was not captured",
+            evidence=[f"Missing required command: {command}" for command in missing],
+            recommendation=(
+                "Add required validation commands to the agent workflow and run them through "
+                "`agent-profiler run`."
+            ),
+        )
+    ]
+
+
+def _source_changed_without_pytest(run: RunMetadata) -> list[Finding]:
+    source_changes = [
+        changed_file.path
+        for changed_file in run.changed_files
+        if changed_file.path.startswith("src/")
+    ]
+    if not source_changes or _pytest_was_captured(run):
+        return []
+    return [
+        Finding(
+            id="source_changed_without_pytest",
+            severity="medium",
+            confidence="high",
+            title="Source changed without captured pytest validation",
+            evidence=[f"Source files changed: {', '.join(source_changes[:5])}"],
+            recommendation=(
+                "Run `python -m pytest` or a focused pytest target through the profiler."
+            ),
+        )
+    ]
+
+
+def _docs_only_overvalidation(run: RunMetadata) -> list[Finding]:
+    if not run.changed_files or not all(
+        _is_docs_only_path(item.path) for item in run.changed_files
+    ):
+        return []
+    full_pytest_commands = [
+        command.command for command in run.commands if _is_full_test_suite(command.command)
+    ]
+    if not full_pytest_commands:
+        return []
+    return [
+        Finding(
+            id="docs_only_overvalidation",
+            severity="low",
+            confidence="high",
+            title="Docs-only change used full pytest validation",
+            evidence=[
+                f"Full pytest command captured: {command}" for command in full_pytest_commands
+            ],
+            recommendation=(
+                "Use targeted validation for docs-only changes, such as Markdown checks or a "
+                "lightweight smoke command."
+            ),
+        )
+    ]
+
+
+def _usage_cost_findings(run: RunMetadata) -> list[Finding]:
+    if run.usage is None:
+        return []
+    findings: list[Finding] = []
+    cost = run.usage.estimated_cost
+    if cost is not None and cost >= 1.0 and run.verdict == "INVALID_RUN":
+        findings.append(
+            Finding(
+                id="expensive_invalid_run",
+                severity="high",
+                confidence="high",
+                title="Expensive invalid run",
+                evidence=[f"Run verdict is INVALID_RUN with estimated cost {cost:.2f}"],
+                recommendation=(
+                    "Stop invalid runs earlier and add preflight checks before agent work."
+                ),
+            )
+        )
+    changed_lines = sum(item.lines_added + item.lines_removed for item in run.changed_files)
+    if cost is not None and cost >= 0.5 and len(run.changed_files) <= 2 and changed_lines <= 20:
+        findings.append(
+            Finding(
+                id="high_cost_low_change",
+                severity="medium",
+                confidence="medium",
+                title="High cost for a small change",
+                evidence=[
+                    f"Estimated cost {cost:.2f} for {len(run.changed_files)} files and "
+                    f"{changed_lines} changed lines"
+                ],
+                recommendation=(
+                    "Use smaller prompts, scoped context, or deterministic tools for tiny changes."
+                ),
+            )
+        )
+    if (
+        run.usage.input_tokens
+        and run.usage.output_tokens
+        and run.usage.output_tokens / run.usage.input_tokens >= 1.0
+    ):
+        findings.append(
+            Finding(
+                id="high_output_token_ratio",
+                severity="medium",
+                confidence="high",
+                title="High output token ratio",
+                evidence=[
+                    (
+                        f"Output tokens {run.usage.output_tokens} vs input tokens "
+                        f"{run.usage.input_tokens}"
+                    )
+                ],
+                recommendation=(
+                    "Ask for concise reports and avoid copying large generated output back to "
+                    "the agent."
+                ),
+            )
+        )
+    if (
+        cost is not None
+        and cost >= 0.25
+        and run.changed_files
+        and all(_is_docs_only_path(item.path) for item in run.changed_files)
+    ):
+        findings.append(
+            Finding(
+                id="expensive_docs_only_run",
+                severity="medium",
+                confidence="high",
+                title="Expensive docs-only run",
+                evidence=[f"Estimated cost {cost:.2f} for docs-only changes"],
+                recommendation=(
+                    "Use cheaper deterministic checks or manual edits for docs-only changes."
+                ),
+            )
+        )
+    return findings
 
 
 def _forbidden_file_changes(run: RunMetadata) -> list[Finding]:
@@ -375,6 +557,34 @@ def _looks_formatting_only(line: str) -> bool:
         return True
     punctuation = set("(){}[],:;,.")
     return bool(stripped) and all(character in punctuation for character in stripped)
+
+
+def _configured_list(section: Any, key: str) -> list[str]:
+    if not isinstance(section, dict):
+        return []
+    value = section.get(key, [])
+    if not isinstance(value, list):
+        return []
+    return [str(item) for item in value]
+
+
+def _matches_any_pattern(path: str, patterns: list[str]) -> bool:
+    normalized = path.replace("\\", "/")
+    return any(PurePosixPath(normalized).match(pattern) for pattern in patterns)
+
+
+def _normalize_command(command: str) -> str:
+    return " ".join(command.split())
+
+
+def _pytest_was_captured(run: RunMetadata) -> bool:
+    return any("pytest" in _normalize_command(command.command).lower() for command in run.commands)
+
+
+def _is_docs_only_path(path: str) -> bool:
+    normalized = path.replace("\\", "/")
+    name = PurePosixPath(normalized).name.lower()
+    return normalized.startswith("docs/") or name in {"readme.md", "readme"}
 
 
 def _normalize_edit_line(line: str) -> str:

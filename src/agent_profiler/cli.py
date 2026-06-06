@@ -28,6 +28,7 @@ from agent_profiler.storage import (
     set_active_run,
     write_json,
 )
+from agent_profiler.usage import attach_usage_file
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -64,7 +65,18 @@ def build_parser() -> argparse.ArgumentParser:
 
     compare_parser = subcommands.add_parser("compare")
     compare_parser.add_argument("--last", type=int, default=10, dest="last")
+    compare_parser.add_argument(
+        "--valid-only",
+        action="store_true",
+        dest="valid_only",
+        help="Exclude invalid runs with verdict INVALID_RUN from the comparison.",
+    )
     compare_parser.set_defaults(func=cmd_compare)
+
+    usage_parser = subcommands.add_parser("attach-usage")
+    usage_parser.add_argument("--run", default="latest", dest="run_id")
+    usage_parser.add_argument("--file", required=True, dest="usage_file")
+    usage_parser.set_defaults(func=cmd_attach_usage)
     return parser
 
 
@@ -166,8 +178,16 @@ def cmd_compare(args: argparse.Namespace) -> int:
         raise ValueError("--last must be at least 1")
     root = Path.cwd()
     ensure_layout(root)
-    path = write_comparison_report(root, args.last)
+    path = write_comparison_report(root, args.last, args.valid_only)
     print(f"Wrote comparison report: {path.relative_to(root).as_posix()}")
+    return 0
+
+
+def cmd_attach_usage(args: argparse.Namespace) -> int:
+    root = Path.cwd()
+    ensure_layout(root)
+    path = attach_usage_file(root, args.run_id, Path(args.usage_file))
+    print(f"Attached usage file: {path.relative_to(root).as_posix()}")
     return 0
 
 

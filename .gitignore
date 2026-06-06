@@ -1,6 +1,7 @@
 .agent-profiler/runs/
 .agent-profiler/command-logs/
 .agent-profiler/snapshots/
+.agent-profiler/usage/
 .agent-profiler/reports/*.md
 .agent-profiler/active-run
 !.agent-profiler/reports/implementation-report.md

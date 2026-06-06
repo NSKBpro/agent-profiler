@@ -29,6 +29,14 @@ def test_markdown_report_contains_required_sections() -> None:
                 evidence=["EADME.md is similar to README.md"],
                 recommendation="Remove the typo artifact.",
             ),
+            Finding(
+                id="changed_file_outside_allowed_paths",
+                severity="high",
+                confidence="high",
+                title="Changed file outside allowed paths",
+                evidence=["Outside allowed paths: docs/notes.md"],
+                recommendation="Tighten allowed paths.",
+            ),
         ],
         score={"correctness": 40},
         verdict="NEEDS_HUMAN_REVIEW",
@@ -44,6 +52,7 @@ def test_markdown_report_contains_required_sections() -> None:
         "## Changed Files",
         "## Commands Run",
         "## Findings",
+        "## Agent Optimization Suggestions",
         "## Recommendations",
         "## Final Verdict",
     ):
@@ -58,6 +67,7 @@ def test_markdown_report_contains_required_sections() -> None:
         assert category in report
     assert "## Score" in report
     assert "Suspicious near-duplicate filename changed" in report
+    assert "Tighten allowed paths in the prompt." in report
     assert "### Scope" in report
     assert "### Safety" in report
     assert "NEEDS_HUMAN_REVIEW" in report

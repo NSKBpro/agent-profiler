@@ -12,7 +12,7 @@ PROFILER_DIR = ".agent-profiler"
 
 def ensure_layout(root: Path) -> Path:
     base = root / PROFILER_DIR
-    for child in ("cases", "runs", "reports", "snapshots", "command-logs"):
+    for child in ("cases", "runs", "reports", "snapshots", "command-logs", "usage"):
         (base / child).mkdir(parents=True, exist_ok=True)
     config_path = base / "config.yml"
     if not config_path.exists():

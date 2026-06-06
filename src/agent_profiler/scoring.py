@@ -33,6 +33,15 @@ def score_run(run: RunMetadata) -> tuple[dict[str, int], str]:
             score["scope_control"] = max(0, score["scope_control"] - 4)
         elif finding.id == "suspicious_near_duplicate_filename":
             score["scope_control"] = max(0, score["scope_control"] - 3)
+        elif finding.id == "changed_file_outside_allowed_paths":
+            score["scope_control"] = max(0, score["scope_control"] - 8)
+        elif finding.id in {
+            "missing_required_validation_command",
+            "source_changed_without_pytest",
+        }:
+            score["validation_quality"] = max(0, score["validation_quality"] - 4)
+        elif finding.id == "docs_only_overvalidation":
+            score["efficiency"] = max(0, score["efficiency"] - 1)
         elif finding.id == "lock_file_changed_unexpectedly":
             score["scope_control"] = max(0, score["scope_control"] - 6)
             score["instruction_compliance"] = max(0, score["instruction_compliance"] - 4)
@@ -48,7 +57,9 @@ def score_run(run: RunMetadata) -> tuple[dict[str, int], str]:
         score["correctness"] = max(0, score["correctness"] - 10)
 
     total = sum(score.values())
-    if any(finding.severity == "high" for finding in run.findings):
+    if run.verdict == "INVALID_RUN":
+        verdict = "INVALID_RUN"
+    elif any(finding.severity == "high" for finding in run.findings):
         verdict = "NEEDS_HUMAN_REVIEW"
     elif run.findings:
         verdict = "PASS_WITH_WARNINGS"
