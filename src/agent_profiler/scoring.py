@@ -31,6 +31,8 @@ def score_run(run: RunMetadata) -> tuple[dict[str, int], str]:
             score["efficiency"] = max(0, score["efficiency"] - 2)
         elif finding.id == "broad_file_spread":
             score["scope_control"] = max(0, score["scope_control"] - 4)
+        elif finding.id == "suspicious_near_duplicate_filename":
+            score["scope_control"] = max(0, score["scope_control"] - 3)
         elif finding.id == "lock_file_changed_unexpectedly":
             score["scope_control"] = max(0, score["scope_control"] - 6)
             score["instruction_compliance"] = max(0, score["instruction_compliance"] - 4)

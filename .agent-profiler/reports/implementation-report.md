@@ -9,6 +9,7 @@
 - Added JSON run metadata, active-run tracking, git baseline/final snapshots, changed-file analysis, and command-output capture.
 - Added deterministic MVP findings for missing required reports, forbidden file changes, repeated command failures, and large command output.
 - Added Phase 9 deterministic local findings for formatting-heavy diff, mechanical repeated edit, broad file spread, full test suite overuse, unexpected lock-file changes, missing tests, generated-file manual edits, and low reviewability.
+- Added a deterministic cleanup finding for suspicious near-duplicate filenames, including `EADME.md` when `README.md` exists in the same directory.
 - Added simple transparent scoring and Markdown report generation with the exact MVP report headings.
 - Improved Markdown report findings so they are grouped by scope, validation, efficiency, automation opportunities, and safety.
 - Added focused unit tests for init layout, sample-case loading, command capture, MVP rules, Phase 9 rules, and report headings/grouping.
@@ -47,6 +48,7 @@
 - `python -m pytest`
 - `python -m ruff check .`
 - `python -m ruff format --check .`
+- `python -m ruff format src\agent_profiler\rules\core.py src\agent_profiler\reports\markdown.py src\agent_profiler\scoring.py tests\unit\test_phase9_rules.py tests\unit\test_report.py`
 - `pip install -e .`
 - `agent-profiler init`
 - `agent-profiler start --case sample-case`
@@ -60,7 +62,7 @@
 
 ## Validation result
 
-- `python -m pytest`: passed, 15 tests.
+- `python -m pytest`: passed, 16 tests.
 - `python -m ruff check .`: passed.
 - `python -m ruff format --check .`: passed.
 - MVP smoke workflow with `sample-case`: passed.
@@ -74,6 +76,7 @@
 - Command wrapping uses the local shell to preserve normal CLI behavior, so commands should be treated as user-supplied local actions.
 - Changed-file line counts come from git diff against `HEAD`; untracked files are detected but have zero line counts until tracked.
 - Phase 9 rules are deterministic heuristics. They provide review signals from local evidence, not proof of semantic correctness or intent.
+- Suspicious filename detection is intentionally simple and compares changed files against common repository filenames in the same directory.
 - Intentionally ignored local/generated files: `.agent-profiler/runs/`, `.agent-profiler/command-logs/`, `.agent-profiler/snapshots/`, generated `.agent-profiler/reports/*.md` except `implementation-report.md`, `.agent-profiler/cases.zip`, Python bytecode caches, pytest/Ruff caches, and editable-install egg-info metadata.
 
 ## Next recommended step

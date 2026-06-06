@@ -45,6 +45,16 @@ def test_broad_file_spread_rule_works(tmp_path: Path) -> None:
     assert _finding_ids(tmp_path, run) == {"broad_file_spread", "missing_tests"}
 
 
+def test_suspicious_near_duplicate_filename_rule_detects_readme_typo(tmp_path: Path) -> None:
+    (tmp_path / "README.md").write_text("# Project\n", encoding="utf-8")
+    run = _run(changed_files=[ChangedFile("EADME.md", "untracked")])
+
+    findings = analyze_run(tmp_path, run, {"rules": {}})
+
+    assert {finding.id for finding in findings} == {"suspicious_near_duplicate_filename"}
+    assert "EADME.md is similar to README.md" in findings[0].evidence
+
+
 def test_full_test_suite_overuse_rule_works(tmp_path: Path) -> None:
     run = _run(
         changed_files=[ChangedFile("src/a.py", "modified")],

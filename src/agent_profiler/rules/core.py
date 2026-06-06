@@ -16,6 +16,7 @@ def analyze_run(root: Path, run: RunMetadata, config: dict[str, Any]) -> list[Fi
     findings.extend(_formatting_heavy_diff(run, config))
     findings.extend(_mechanical_repeated_edit(run, config))
     findings.extend(_broad_file_spread(run, config))
+    findings.extend(_suspicious_near_duplicate_filenames(root, run))
     findings.extend(_full_test_suite_overuse(run, config))
     findings.extend(_lock_file_changed_unexpectedly(run))
     findings.extend(_missing_tests(run))
@@ -207,6 +208,46 @@ def _broad_file_spread(run: RunMetadata, config: dict[str, Any]) -> list[Finding
     ]
 
 
+def _suspicious_near_duplicate_filenames(root: Path, run: RunMetadata) -> list[Finding]:
+    common_names = {
+        "README.md",
+        "LICENSE",
+        "AGENTS.md",
+        "pyproject.toml",
+        "package.json",
+    }
+    suspicious: list[str] = []
+    for changed_file in run.changed_files:
+        changed_path = PurePosixPath(changed_file.path)
+        changed_name = changed_path.name
+        for common_name in common_names:
+            if changed_name.lower() == common_name.lower():
+                continue
+            if changed_path.suffix.lower() != PurePosixPath(common_name).suffix.lower():
+                continue
+            existing_common = root / changed_path.parent / common_name
+            if not existing_common.exists():
+                continue
+            if _edit_distance(changed_name.lower(), common_name.lower()) <= 2:
+                suspicious.append(f"{changed_file.path} is similar to {common_name}")
+
+    if not suspicious:
+        return []
+    return [
+        Finding(
+            id="suspicious_near_duplicate_filename",
+            severity="medium",
+            confidence="high",
+            title="Suspicious near-duplicate filename changed",
+            evidence=suspicious,
+            recommendation=(
+                "Review likely filename typo artifacts and remove or rename accidental duplicate "
+                "files."
+            ),
+        )
+    ]
+
+
 def _full_test_suite_overuse(run: RunMetadata, config: dict[str, Any]) -> list[Finding]:
     threshold = int(
         config.get("rules", {}).get("full_test_suite_overuse", {}).get("min_repetitions", 2)
@@ -385,3 +426,20 @@ def _generator_command_was_run(run: RunMetadata) -> bool:
     return any(
         any(term in command.command.lower() for term in generator_terms) for command in run.commands
     )
+
+
+def _edit_distance(left: str, right: str) -> int:
+    previous = list(range(len(right) + 1))
+    for left_index, left_char in enumerate(left, start=1):
+        current = [left_index]
+        for right_index, right_char in enumerate(right, start=1):
+            substitution_cost = 0 if left_char == right_char else 1
+            current.append(
+                min(
+                    previous[right_index] + 1,
+                    current[right_index - 1] + 1,
+                    previous[right_index - 1] + substitution_cost,
+                )
+            )
+        previous = current
+    return previous[-1]

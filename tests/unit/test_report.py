@@ -20,7 +20,15 @@ def test_markdown_report_contains_required_sections() -> None:
                 title="Required report artifact is missing",
                 evidence=["Missing required report: report.md"],
                 recommendation="Create the report.",
-            )
+            ),
+            Finding(
+                id="suspicious_near_duplicate_filename",
+                severity="medium",
+                confidence="high",
+                title="Suspicious near-duplicate filename changed",
+                evidence=["EADME.md is similar to README.md"],
+                recommendation="Remove the typo artifact.",
+            ),
         ],
         score={"correctness": 40},
         verdict="NEEDS_HUMAN_REVIEW",
@@ -49,4 +57,7 @@ def test_markdown_report_contains_required_sections() -> None:
     ):
         assert category in report
     assert "## Score" in report
+    assert "Suspicious near-duplicate filename changed" in report
+    assert "### Scope" in report
+    assert "### Safety" in report
     assert "NEEDS_HUMAN_REVIEW" in report

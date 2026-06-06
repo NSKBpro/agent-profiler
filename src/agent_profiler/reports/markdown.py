@@ -94,6 +94,7 @@ _CATEGORY_IDS = {
         "broad_file_spread",
         "missing_tests",
         "low_reviewability",
+        "suspicious_near_duplicate_filename",
     },
     "validation": {
         "missing_report",
@@ -116,6 +117,7 @@ _CATEGORY_IDS = {
         "forbidden_file_changed",
         "lock_file_changed_unexpectedly",
         "generated_file_changed_manually",
+        "suspicious_near_duplicate_filename",
     },
 }
 
