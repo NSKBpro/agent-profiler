@@ -112,6 +112,7 @@ class RunMetadata:
     case: dict[str, Any] = field(default_factory=dict)
     commands: list[CommandRecord] = field(default_factory=list)
     changed_files: list[ChangedFile] = field(default_factory=list)
+    diff: str = ""
     reports: list[str] = field(default_factory=list)
     findings: list[Finding] = field(default_factory=list)
     score: dict[str, int] = field(default_factory=dict)
@@ -147,6 +148,7 @@ class RunMetadata:
             case=dict(data.get("case", {})),
             commands=[CommandRecord.from_dict(item) for item in data.get("commands", [])],
             changed_files=[ChangedFile.from_dict(item) for item in data.get("changed_files", [])],
+            diff=str(data.get("diff", "")),
             reports=[str(item) for item in data.get("reports", [])],
             findings=[Finding.from_dict(item) for item in data.get("findings", [])],
             score={str(key): int(value) for key, value in data.get("score", {}).items()},

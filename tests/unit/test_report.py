@@ -40,5 +40,13 @@ def test_markdown_report_contains_required_sections() -> None:
         "## Final Verdict",
     ):
         assert section in report
+    for category in (
+        "### Scope",
+        "### Validation",
+        "### Efficiency",
+        "### Automation Opportunities",
+        "### Safety",
+    ):
+        assert category in report
     assert "## Score" in report
     assert "NEEDS_HUMAN_REVIEW" in report

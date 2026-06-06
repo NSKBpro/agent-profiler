@@ -1,7 +1,0 @@
-$ python -c print('hello')
-
-[stdout]
-hello
-
-
-[stderr]

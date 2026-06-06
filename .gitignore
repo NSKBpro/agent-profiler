@@ -1,0 +1,12 @@
+.agent-profiler/runs/
+.agent-profiler/command-logs/
+.agent-profiler/snapshots/
+.agent-profiler/reports/*.md
+!.agent-profiler/reports/implementation-report.md
+.agent-profiler/cases.zip
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/

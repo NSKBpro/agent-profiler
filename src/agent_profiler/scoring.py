@@ -22,8 +22,24 @@ def score_run(run: RunMetadata) -> tuple[dict[str, int], str]:
         elif finding.id == "repeated_failure":
             score["efficiency"] = max(0, score["efficiency"] - 6)
             score["validation_quality"] = max(0, score["validation_quality"] - 2)
-        elif finding.id == "large_command_output":
+        elif finding.id in {
+            "large_command_output",
+            "formatting_heavy_diff",
+            "mechanical_repeated_edit",
+            "full_test_suite_overuse",
+        }:
             score["efficiency"] = max(0, score["efficiency"] - 2)
+        elif finding.id == "broad_file_spread":
+            score["scope_control"] = max(0, score["scope_control"] - 4)
+        elif finding.id == "lock_file_changed_unexpectedly":
+            score["scope_control"] = max(0, score["scope_control"] - 6)
+            score["instruction_compliance"] = max(0, score["instruction_compliance"] - 4)
+        elif finding.id == "missing_tests":
+            score["validation_quality"] = max(0, score["validation_quality"] - 4)
+        elif finding.id == "generated_file_changed_manually":
+            score["scope_control"] = max(0, score["scope_control"] - 3)
+        elif finding.id == "low_reviewability":
+            score["report_quality"] = max(0, score["report_quality"] - 2)
     if not run.commands:
         score["validation_quality"] = 0
     if any(command.exit_code != 0 for command in run.commands):

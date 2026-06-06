@@ -9,6 +9,7 @@ from agent_profiler.command_runner import run_wrapped_command
 from agent_profiler.config import load_case, load_config
 from agent_profiler.git_inspector import (
     analyze_changed_files,
+    diff,
     dirty_status,
     ensure_git_repo,
     snapshot,
@@ -135,6 +136,7 @@ def cmd_finish(args: argparse.Namespace) -> int:
     run.commit_after = final.get("commit")
     run.final_snapshot_path = final_snapshot_path.relative_to(root).as_posix()
     run.changed_files = analyze_changed_files(root, forbidden)
+    run.diff = diff(root)
     run.reports = [path for path in required_reports if (root / path).exists()]
     run.findings = analyze_run(root, run, config)
     run.score, run.verdict = score_run(run)

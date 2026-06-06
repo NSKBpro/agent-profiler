@@ -41,6 +41,10 @@ def dirty_status(root: Path) -> str:
     return run_git(root, ["status", "--porcelain"], check=False)
 
 
+def diff(root: Path) -> str:
+    return run_git(root, ["diff", "HEAD"], check=False)
+
+
 def analyze_changed_files(root: Path, forbidden_patterns: list[str]) -> list[ChangedFile]:
     numstat = _numstat(root)
     statuses = _status_map(root)
