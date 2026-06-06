@@ -74,31 +74,33 @@ pip install -e .[dev]
 
 ## Quick Start
 
-Initialize local profiler storage:
+From the repository root, initialize the local profiler files:
 
 ```bash
 agent-profiler init
 ```
 
-Start a profiling run from a case:
+Start a run using the included sample case. The command prints the task prompt
+for the agent or manual workflow being profiled:
 
 ```bash
 agent-profiler start --case sample-case
 ```
 
-Run a command through the profiler:
+Run validation or diagnostic commands through the profiler so their output and
+exit codes are captured:
 
 ```bash
 agent-profiler run python -c "print('hello')"
 ```
 
-Finish the run and capture final git state:
+Finish the run to capture the final git state and apply deterministic rules:
 
 ```bash
 agent-profiler finish
 ```
 
-Generate a Markdown report:
+Generate the latest run's Markdown report:
 
 ```bash
 agent-profiler report --run latest
